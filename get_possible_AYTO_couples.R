@@ -1,4 +1,6 @@
 library(tidyr)
+library(purrr)
+library(data.table)
 #install.packages("DescTools")
 library(DescTools)
 
@@ -134,9 +136,48 @@ save_number_of_combinations <- function(df, special_person, perfect_matches){
     transmute(night = df$night[1], n_comb)
 }
 
+reverse_paste <- function(x, y, sep){
+  paste(y,x,sep = sep)
+}
+
+get_permutations <- function(combs, girls, boys){
+  list_of_comb_dfs <- lapply(combs, get_permutations_from_comb, girls = girls, boys = boys)
+  rbindlist(list_of_comb_dfs) %>%
+    distinct(comb)
+}
+
+get_permutations_from_comb <- function(fixed_comb, girls, boys){
+  single_girls <- girls[which(str_detect(fixed_comb, girls, negate = TRUE))]
+  single_boys <- boys[which(str_detect(fixed_comb, boys, negate = TRUE))]
+  permutations <- data.frame(Permn(single_boys, sort = T))
+  colnames(permutations) <- single_girls
+  permutations %>%
+    mutate(across(everything(), ~ reverse_paste(.x, cur_column(), sep = "+"))) %>%
+    unite(col = "comb", sep = " ") %>%
+    transmute(fixed_comb = fixed_comb, comb) %>%
+    unite(col = "comb", sep = " ") %>%
+    remove_doubles()
+}
 
 
-combinations <- function(nights, max_cap, special_person, perfect_matches){
+make_tidy_comb_df <- function(comb_df){
+  boys_as_values <- comb_df %>%
+    separate(1, letters[1:11], sep = " ", extra = "drop", fill = "right") %>%
+    mutate(across(everything(), ~ str_split(.x, fixed("+"), simplify = TRUE)[, 2]))
+  girls <- comb_df[1,] %>%
+    separate(1, letters[1:11], sep = " ", extra = "drop", fill = "right") %>%
+    mutate(across(everything(), ~ str_split(.x, fixed("+"))[[1]][1]))
+  colnames(boys_as_values) <- as.character(girls)
+  boys_as_values
+}
+
+get_df_from_combs <- function(combs, girls, boys){
+  get_permutations(combs, girls, boys) %>%
+    make_tidy_comb_df()
+}
+
+
+combinations <- function(nights, max_cap, special_person, perfect_matches, girls, boys){
   start_sub <- CombSet(sort(nights[[1]]), m=max_cap[1]) 
   dfx <- df_from_sub(start_sub,1)
   number_of_combs <- tibble()
@@ -150,7 +191,7 @@ combinations <- function(nights, max_cap, special_person, perfect_matches){
     }
     number_of_combs <- rbind(number_of_combs, save_number_of_combinations(dfx, special_person, perfect_matches))
   }
-  list(dfx, number_of_combs)
+  list(dfx,  number_of_combs) #get_df_from_combs(dfx$comb, girls, boys)
 }
 
 
@@ -160,4 +201,4 @@ combinations <- function(nights, max_cap, special_person, perfect_matches){
 nights <- all_nights_couples
 special_person = girls[11] # 11th candidate comes later to the cast -> one boy gets a second perfect match
 max_cap <- as.numeric(night_lights)
-combs2 <- combinations(nights,max_cap, special_person, perfect_matches)
+combs2 <- combinations(nights,max_cap, special_person, perfect_matches, girls, boys)
