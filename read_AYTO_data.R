@@ -35,7 +35,7 @@ filter_night_x <- function(night_nr, ayto_tbl, girls){
 ### ------------------------------------------------------------------------------
 
 
-ayto_excel_file <- "ayto3.xlsx"
+ayto_excel_file <- "ayto_reality_special.xlsx"
 ayto_tbl <- readAYTO(ayto_excel_file)
 
 
@@ -46,6 +46,7 @@ night_lights <- read_excel(ayto_excel_file, sheet = "night_lights")
 nights_in_the_future <- which(is.na(night_lights[1,])) # any missing data? (e.g. beginning of a season)
 night_lights <- night_lights[1, -nights_in_the_future] # ignore missing data = drop future nights
 
+boys <- rownames(ayto_tbl)
 girls = colnames(ayto_tbl)
 all_nights_couples <- sapply(1:ncol(night_lights), filter_night_x, ayto_tbl = ayto_tbl, girls = girls)
 # a list with all matching night couples in every matching night
