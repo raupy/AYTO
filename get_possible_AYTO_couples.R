@@ -4,7 +4,8 @@ library(data.table)
 #install.packages("DescTools")
 library(DescTools)
 
-if(!exists("readAYTO", mode="function")) source("read_AYTO_data.R")
+#if(!exists("readAYTO", mode="function")) 
+source("read_AYTO_data.R")
 
 ### ------------------------------------------------------------------------------
 ### ------------------------------------------------------------------------------
@@ -39,7 +40,7 @@ join_nights<- function(df_night_1, df_night_2, perfect_matches_df){
     bind_rows(inner) %>% 
     mutate(is_collision = sapply(comb, is.collision, perfect_match = perfect_matches_night_y)) %>% 
     filter(is_collision == F) %>% 
-    transmute(comb, possible = sapply(comb, is.possible)) %>% 
+    transmute(comb, possible = sapply(comb, is.possible, matching_night = night_y)) %>% 
     filter(possible == T) %>% 
     transmute(night = night_y, comb) %>%
     arrange(comb)
@@ -89,10 +90,10 @@ is.collision <- function(vec_of_couples, perfect_match){
 }
 
 
-is.possible <- function(comb){
+is.possible <- function(comb, matching_night){
   is_possible <- TRUE
   comb <- unlist(str_split(comb[[1]], fixed(" "))) #it is a list with one element: the vector of couples
-  for(i in 1:length(nights)){
+  for(i in 1:matching_night){#length(nights)
     if(!check.upper.bound(nights[[i]], comb, max_cap[i])){ 
       is_possible <- FALSE
       break
@@ -152,12 +153,12 @@ reverse_paste <- function(x, y, sep){
   paste(y,x,sep = sep)
 }
 
-get_permutations <- function(combs, girls, boys, special_person){
-  list_of_comb_dfs <- lapply(combs, get_permutations_from_comb, girls = girls, boys = boys, special_person = special_person)
+get_permutations <- function(combs, night, girls, boys, special_person){
+  list_of_comb_dfs <- lapply(combs, get_permutations_from_comb, night = night, girls = girls, boys = boys, special_person = special_person)
   rbindlist(list_of_comb_dfs) 
 }
 
-get_permutations_from_comb <- function(fixed_comb, girls, boys, special_person){
+get_permutations_from_comb <- function(fixed_comb, night, girls, boys, special_person){
   single_girls <- girls[which(str_detect(fixed_comb, girls, negate = TRUE))]
   single_boys <- boys[which(str_detect(fixed_comb, boys, negate = TRUE))]
   permutations <- data.frame(Permn(single_boys, sort = T))
@@ -171,11 +172,15 @@ get_permutations_from_comb <- function(fixed_comb, girls, boys, special_person){
       mutate(special = rep(boys, each = nrow(permutations))) 
     names(perms_bind)[ncol(perms_bind)] <- special_person
   }else{
-    # special_person has a match with a boy who also has another match, so he needs to be part of the single boys here
-    vec_of_couples <- unlist(str_split(fixed_comb, fixed(" ")))
-    special_person_match <- vec_of_couples[sapply(vec_of_couples, str_detect, pattern = fixed(special_person))]
-    special_person_boy <- str_split(special_person_match, pattern = fixed("+"), simplify = T)[,2]
-    single_boys <- c(single_boys, special_person_boy)
+    if(length(single_boys) != length(single_girls)){
+      # look at the boy who is matched with the special_person:
+      # has he already a match with the original cast or should he be part of the single_boys vector?
+      # special_person has a match with a boy who also has another match, so he needs to be part of the single boys here
+      vec_of_couples <- unlist(str_split(fixed_comb, fixed(" ")))
+      special_person_match <- vec_of_couples[sapply(vec_of_couples, str_detect, pattern = fixed(special_person))]
+      special_person_boy <- str_split(special_person_match, pattern = fixed("+"), simplify = T)[,2]
+      single_boys <- c(single_boys, special_person_boy)
+    }
     perms_bind <- data.frame(Permn(single_boys, sort = T))
     names(perms_bind) <- single_girls
   }
@@ -184,7 +189,10 @@ get_permutations_from_comb <- function(fixed_comb, girls, boys, special_person){
     unite(col = "comb", sep = " ") %>%
     transmute(fixed_comb = fixed_comb, comb) %>%
     unite(col = "comb", sep = " ") %>%
-    remove_doubles()
+    remove_doubles() %>%
+    transmute(comb, possible = sapply(comb, is.possible, matching_night = night)) %>% 
+    filter(possible == T) %>% 
+    select(comb)
 }
 
 
@@ -199,8 +207,8 @@ make_tidy_comb_df <- function(comb_df){
   data.frame(sapply(boys_as_values, as.factor), stringsAsFactors = T)
 }
 
-get_df_from_combs <- function(combs, girls, boys, special_person){
-  get_permutations(combs, girls, boys, special_person) %>%
+get_df_from_combs <- function(comb_df, girls, boys, special_person){
+  get_permutations(comb_df$comb, comb_df$night[1], girls, boys, special_person) %>%
     make_tidy_comb_df()
 }
 
@@ -208,18 +216,23 @@ get_df_from_combs <- function(combs, girls, boys, special_person){
 combinations <- function(nights, max_cap, special_person, perfect_matches, girls, boys){
   start_sub <- CombSet(sort(nights[[1]]), m=max_cap[1]) 
   dfx <- df_from_sub(start_sub,1)
-  number_of_combs <- tibble()
+  number_of_combs <- tibble(night = 0, n_comb = factorial(10)*10) %>%
+    bind_rows(save_number_of_combinations(dfx, special_person))
+  dfs_from_combs_list <- list()
+  dfs_from_combs_list[[2]] <- get_df_from_combs(dfx, girls, boys, special_person)
   for(i in 2:length(nights)){
+    #i <- 2
     night <- nights[[i]]
     sub <- CombSet(sort(night), m=max_cap[i])
     dfy <- df_from_sub(sub,i)
     dfx <- join_nights(dfx,dfy,perfect_matches)
     if(nrow(dfx) == 0){
-      #TODO ???
+      #TODO error warning??? not a single comb possible
     }
-    number_of_combs <- rbind(number_of_combs, save_number_of_combinations(dfx, special_person))
+    number_of_combs <- bind_rows(number_of_combs, save_number_of_combinations(dfx, special_person))
+    dfs_from_combs_list[[i]] <- get_df_from_combs(dfx, girls, boys, special_person)
   }
-  list(dfx, number_of_combs, get_df_from_combs(dfx$comb, girls, boys, special_person)) 
+  list(dfx, number_of_combs, dfs_from_combs_list)# <- get_df_from_combs(dfx$comb, girls, boys, special_person)) 
 }
 
 
