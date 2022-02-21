@@ -1,4 +1,5 @@
-if(!exists("combinations", mode="function")) source("get_possible_AYTO_couples.R")
+### functions for reshaping data frames of perfect matches chr strings into tidier dfs
+
 
 save_number_of_combinations <- function(df, special_person){
   df %>% 

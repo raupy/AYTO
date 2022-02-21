@@ -24,7 +24,7 @@ get_summarised_table_for_night_1_and_girl_x <- function(match, boys, prob_match,
   boy <- match_split[,2]
   df <- data.frame(night = 1,
                    girl = girl,
-                   boys = as.factor(boys),
+                   boy = as.factor(boys),
                    prob = prob_other_matches,
                    freq = freq_other_matches,
                    total = n_combs) 

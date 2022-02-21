@@ -4,8 +4,9 @@ library(tibble)
 library(stringr)
 library(assertive)
 
-### ------------------------------------------------------------------------------
+
 ### functions for reading AYTO excel sheet and extracting data 
+
 
 readAYTO <- function(ayto_excel_file){
   read_excel(ayto_excel_file) %>%
@@ -30,26 +31,3 @@ filter_night_x <- function(night_nr, ayto_tbl, girls){
   couples <- as.vector(couples)
   couples[which(couples != "")] # remove empty string couples (girls without couple)
 }
-
-### ------------------------------------------------------------------------------
-### ------------------------------------------------------------------------------
-
-
-ayto_excel_file <- "ayto_reality_special.xlsx"
-ayto_tbl <- readAYTO(ayto_excel_file)
-
-
-night_lights <- read_excel(ayto_excel_file, sheet = "night_lights") 
-# this sheet contains a table with one row: the matching nights' numbers and their corresponding number of lights
-
-# this sheet contains a table with one row: the matching nights' numbers and their corresponding number of lights
-nights_in_the_future <- which(is.na(night_lights[1,])) # any missing data? (e.g. beginning of a season)
-night_lights <- night_lights[1, -nights_in_the_future] # ignore missing data = drop future nights
-
-boys <- rownames(ayto_tbl)
-girls = colnames(ayto_tbl)
-all_nights_couples <- lapply(1:ncol(night_lights), filter_night_x, ayto_tbl = ayto_tbl, girls = girls)
-# a list with all matching night couples in every matching night
-
-perfect_matches <- read_excel(ayto_excel_file, sheet = "perfect_matches") 
-no_matches <- read_excel(ayto_excel_file, sheet = "no_matches") 

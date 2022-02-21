@@ -5,12 +5,7 @@ library(data.table)
 library(DescTools)
 
 
-
-### ------------------------------------------------------------------------------
-### ------------------------------------------------------------------------------
-
-
-
+### functions for calculating all the combinations of perfect matches that are possible i matching night x
 
 
 # this function is the heart of the script
@@ -163,9 +158,3 @@ combinations <- function(nights, max_cap, special_person, perfect_matches, no_ma
   }
   combs_list
 }
-
-
-
-### ------------------------------------------------------------------------------
-### ------------------------------------------------------------------------------
-
