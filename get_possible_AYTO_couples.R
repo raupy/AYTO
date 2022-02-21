@@ -17,11 +17,15 @@ source("read_AYTO_data.R")
 # this function is the heart of the script
 # it joins the possible combinations from two matching nights @df_night_1 and @df_night_2
 # TODO: explain how it works in general
-join_nights<- function(df_night_1, df_night_2, perfect_matches_df){
+join_nights<- function(df_night_1, df_night_2, perfect_matches_df, no_matches_df){
   night_y <- df_night_2$night[1]
   perfect_matches_night_y <- perfect_matches_df %>% 
     filter(night == night_y) %>% 
     pull(perfect_matches)
+  
+  no_matches_night_y <- no_matches_df %>% 
+    filter(night <= night_y) %>% 
+    pull(no_matches)
   
   inner <- df_night_1 %>%
     inner_join(df_night_2, by = "comb") %>%
@@ -38,7 +42,7 @@ join_nights<- function(df_night_1, df_night_2, perfect_matches_df){
   
   unique_combs %>%
     bind_rows(inner) %>% 
-    mutate(is_collision = sapply(comb, is.collision, perfect_match = perfect_matches_night_y)) %>% 
+    mutate(is_collision = sapply(comb, is.collision, perfect_match = perfect_matches_night_y, no_matches = no_matches_night_y)) %>% 
     filter(is_collision == F) %>% 
     transmute(comb, possible = sapply(comb, is.possible, matching_night = night_y)) %>% 
     filter(possible == T) %>% 
@@ -51,7 +55,7 @@ join_nights<- function(df_night_1, df_night_2, perfect_matches_df){
 # it ignores that Salvo has two matches in this combination (Jacky+Salvo and Kathleen+Salvo) (the function "is.collision" deals with that)
 remove_doubles <- function(comb){
   comb %>% 
-    separate(1, letters[1:11], sep = " ", extra = "drop", fill = "right") %>%
+    separate(1, letters[1:20], sep = " ", extra = "drop", fill = "right") %>%
     apply(1, function(x) paste(sort(na.omit(unique(x))), collapse = " ")) %>%
     data.frame() %>%
     rename(comb = 1)
@@ -66,27 +70,33 @@ remove_doubles <- function(comb){
 
 
 
-is.collision <- function(vec_of_couples, perfect_match){
-  vec_of_couples <- vec_of_couples[[1]] # it's a list with one element: the vector of couples
-  org_vec <- vec_of_couples
-  vec_of_couples <- unlist(str_split(vec_of_couples, fixed(" ")))
-  collision <- FALSE
-  special_person_detect <- sapply(vec_of_couples, str_detect, pattern = fixed(special_person))
-  if(sum(special_person_detect) == 1){ 
+is.collision <- function(couples, perfect_match, no_matches){
+  #vec_of_couples <- vec_of_couples[[1]] # it's a list with one element: the vector of couples
+  #org_vec <- couples
+  
+  if(length(no_matches) > 0){
+    if(any(str_detect(couples, fixed(no_matches)))){
+      return(TRUE)
+    }
+  }
+  if(length(perfect_match) > 0){
+    if(str_detect(couples, pattern = fixed(perfect_match)) == FALSE){
+      return(TRUE)
+    }
+  }
+  
+  couples <- unlist(str_split(couples, fixed(" ")))
+  special_person_detected <- str_detect(couples, fixed(special_person))
+  if(sum(special_person_detected) == 1){ 
     # the person she is with could have a second match, so don't set collision to true
     # instead: remove her couple from the vector 
-    vec_of_couples <- vec_of_couples[-which(special_person_detect)]
+    couples <- couples[-which(special_person_detected)]
   }
-  solo_names <- unlist(str_split(vec_of_couples, fixed("+")))
-  if(length(perfect_match) > 0){
-    if(str_detect(org_vec, pattern = fixed(perfect_match)) == FALSE){
-      collision <- TRUE
-    }
-  } 
+  solo_names <- unlist(str_split(couples, fixed("+")))
   if(length(solo_names) > length(unique(solo_names))){
-    collision <- TRUE
+    return(TRUE)
   }
-  collision
+  return(FALSE)
 }
 
 
@@ -204,7 +214,12 @@ make_tidy_comb_df <- function(comb_df){
     separate(1, letters[1:11], sep = " ", extra = "drop", fill = "right") %>%
     mutate(across(everything(), ~ str_split(.x, fixed("+"))[[1]][1]))
   colnames(boys_as_values) <- as.character(girls)
-  data.frame(sapply(boys_as_values, as.factor), stringsAsFactors = T)
+  if(nrow(boys_as_values) > 1){
+    boys_as_values <- data.frame(sapply(boys_as_values, as.factor), stringsAsFactors = T)
+  }
+  else{
+    data.frame(boys_as_values)
+  }
 }
 
 get_df_from_combs <- function(comb_df, girls, boys, special_person){
@@ -213,26 +228,27 @@ get_df_from_combs <- function(comb_df, girls, boys, special_person){
 }
 
 
-combinations <- function(nights, max_cap, special_person, perfect_matches, girls, boys){
+combinations <- function(nights, max_cap, special_person, perfect_matches, no_matches, girls, boys){
   start_sub <- CombSet(sort(nights[[1]]), m=max_cap[1]) 
   dfx <- df_from_sub(start_sub,1)
-  number_of_combs <- tibble(night = 0, n_comb = factorial(10)*10) %>%
-    bind_rows(save_number_of_combinations(dfx, special_person))
-  dfs_from_combs_list <- list()
-  dfs_from_combs_list[[2]] <- get_df_from_combs(dfx, girls, boys, special_person)
+  #number_of_combs <- tibble(night = 0, n_comb = factorial(10)*10) %>%
+  #e3  bind_rows(save_number_of_combinations(dfx, special_person))
+  combs_list <- list()
+  combs_list[[1]] <- dfx
   for(i in 2:length(nights)){
-    #i <- 2
+    #i = 9
     night <- nights[[i]]
     sub <- CombSet(sort(night), m=max_cap[i])
     dfy <- df_from_sub(sub,i)
-    dfx <- join_nights(dfx,dfy,perfect_matches)
+    dfx <- join_nights(dfx,dfy,perfect_matches, no_matches)
     if(nrow(dfx) == 0){
       #TODO error warning??? not a single comb possible
     }
-    number_of_combs <- bind_rows(number_of_combs, save_number_of_combinations(dfx, special_person))
-    dfs_from_combs_list[[i]] <- get_df_from_combs(dfx, girls, boys, special_person)
+    #number_of_combs <- bind_rows(number_of_combs, save_number_of_combinations(dfx, special_person))
+    combs_list[[i]] <- dfx
   }
-  list(dfx, number_of_combs, dfs_from_combs_list)# <- get_df_from_combs(dfx$comb, girls, boys, special_person)) 
+  #list(dfx, number_of_combs, dfs_from_combs_list)# <- get_df_from_combs(dfx$comb, girls, boys, special_person))
+  combs_list
 }
 
 
@@ -243,4 +259,4 @@ combinations <- function(nights, max_cap, special_person, perfect_matches, girls
 nights <- all_nights_couples
 special_person = girls[11] # 11th candidate comes later to the cast -> one boy gets a second perfect match
 max_cap <- as.numeric(night_lights)
-combs2 <- combinations(nights,max_cap, special_person, perfect_matches, girls, boys)
+combs3 <- combinations(nights,max_cap, special_person, perfect_matches, no_matches, girls, boys)
