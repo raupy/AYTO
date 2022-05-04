@@ -19,12 +19,12 @@ reverse_paste <- function(x, y, sep) {
   paste(y, x, sep = sep)
 }
 
-get_permutations <- function(combs, night, girls, boys, special_person) {
-  list_of_comb_dfs <- lapply(combs, get_permutations_from_comb, night = night, girls = girls, boys = boys, special_person = special_person)
+get_permutations <- function(combs, night, girls, boys, special_person, nights) {
+  list_of_comb_dfs <- lapply(combs, get_permutations_from_comb, night = night, girls = girls, boys = boys, special_person = special_person, nights = nights)
   rbindlist(list_of_comb_dfs) 
 }
 
-get_permutations_from_comb <- function(fixed_comb, night, girls, boys, special_person) {
+get_permutations_from_comb <- function(fixed_comb, night, girls, boys, special_person, nights) {
   single_girls <- girls[which(str_detect(fixed_comb, girls, negate = TRUE))]
   single_boys <- boys[which(str_detect(fixed_comb, boys, negate = TRUE))]
   permutations <- data.frame(Permn(single_boys, sort = T))
@@ -56,7 +56,7 @@ get_permutations_from_comb <- function(fixed_comb, night, girls, boys, special_p
     transmute(fixed_comb = fixed_comb, comb) %>%
     unite(col = "comb", sep = " ") %>%
     remove_doubles() %>%
-    transmute(comb, possible = sapply(comb, is_possible, matching_night = night)) %>% 
+    transmute(comb, possible = sapply(comb, is_possible, matching_night = night, nights)) %>% 
     filter(possible == T) %>% 
     select(comb)
 }
@@ -78,8 +78,8 @@ make_tidy_comb_df <- function(comb_df) {
   }
 }
 
-get_df_from_combs <- function(comb_df, girls, boys, special_person) {
-  get_permutations(comb_df$comb, comb_df$night[1], girls, boys, special_person) %>%
+get_df_from_combs <- function(comb_df, girls, boys, special_person, nights) {
+  get_permutations(comb_df$comb, comb_df$night[1], girls, boys, special_person, nights) %>%
     make_tidy_comb_df()
 }
 
