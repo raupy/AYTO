@@ -10,7 +10,7 @@ library(DescTools)
 # this function is the heart of the script
 # it joins the possible combinations from two matching nights @df_night_1 and @df_night_2
 # TODO: explain how it works in general
-join_nights <- function(df_night_1, df_night_2, perfect_matches_df, no_matches_df) {
+join_nights <- function(df_night_1, df_night_2, nights, perfect_matches_df, no_matches_df) {
   night_y <- df_night_2$night[1]
   perfect_matches_night_y <- perfect_matches_df %>% 
     filter(night == night_y) %>% 
@@ -37,7 +37,7 @@ join_nights <- function(df_night_1, df_night_2, perfect_matches_df, no_matches_d
     bind_rows(inner) %>% 
     mutate(is_collision = sapply(comb, is_collision, perfect_match = perfect_matches_night_y, no_matches = no_matches_night_y)) %>% 
     filter(is_collision == F) %>% 
-    transmute(comb, possible = sapply(comb, is_possible, matching_night = night_y)) %>% 
+    transmute(comb, possible = sapply(comb, is_possible, matching_night = night_y, nights = nights)) %>% 
     filter(possible == T) %>% 
     transmute(night = night_y, comb) %>%
     arrange(comb)
@@ -81,7 +81,7 @@ is_collision <- function(couples, perfect_match, no_matches) {
 }
 
 
-is_possible <- function(comb, matching_night) {
+is_possible <- function(comb, matching_night, nights) {
   is_possible <- TRUE
   comb <- unlist(str_split(comb[[1]], fixed(" "))) #it is a list with one element: the vector of couples
   for (i in 1:matching_night) {
@@ -137,7 +137,7 @@ combinations <- function(nights, max_cap, special_person, perfect_matches, no_ma
     night <- nights[[i]]
     sub <- CombSet(sort(night), m = max_cap[i])
     dfy <- df_from_sub(sub, i)
-    dfx <- join_nights(dfx, dfy, perfect_matches, no_matches)
+    dfx <- join_nights(dfx, dfy, nights, perfect_matches, no_matches)
     if (nrow(dfx) == 0) {
       #TODO error warning??? not a single comb possible
     }
