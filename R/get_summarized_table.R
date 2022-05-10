@@ -104,3 +104,10 @@ get_summarised_table_for_every_night <- function(list_of_comb_dfs, nights, boys_
   list_of_dfs_with_night <- map(nights, ~ mutate_col_into_df(.x, list_of_comb_dfs))
   map_dfr(list_of_dfs_with_night, ~ get_summarised_table_for_night(.x, night = min(.x[["night"]]), boys_factor = boys_factor))
 }
+
+get_n_combs_development <- function(sum_table){
+  tibble(night = 0, n_combs = factorial(10) * 10) %>% 
+    rbind(sum_table %>% 
+            group_by(night) %>%
+            summarise(n_combs = min(total))) 
+}

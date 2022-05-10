@@ -1,7 +1,7 @@
 Solving the ‘Are You The One?’ puzzle
 ================
 
-# What is ‘Are You The One?’?
+## What is ‘Are You The One?’?
 
 AYTO is one of my favorite dating shows. This
 [Wikipedia](https://en.wikipedia.org/wiki/Are_You_the_One%3F_(German_TV_series))
@@ -29,10 +29,16 @@ until the final episode, but one can of course write down all the clues
 from the matching nights and thereby find out that some contestants must
 surely make a couple, while others can’t possibly be one. However, it
 can be quite difficult to get it all right, because, even with the
-clues, there are still SO many possible combinations. This R project
-solves the puzzle and symbolically wins the prize money 💰💰
+clues, there are still SO many possible combinations. It’s actually a
+pretty fun puzzle to solve programmatically with R. Isn’t it remarkable
+that therefore this really trashy TV show can be considered educational
+TV!
 
-Look at the data table below to get a feeling about the problem:
+## Let’s win the prize money 💰💰
+
+Look at the data table below to get a feeling about the problem. A
+number x means that this couple sat together in the matching night x,
+like Alex and Finnja in matching night 2.
 
 |           | Aurelia       | Finnja  | Jacky      | Jill | Kathleen            | Melina        | Sarah   | Steffi  | Jules                  | Walentina  | Vanessa |
 |-----------|:--------------|:--------|:-----------|:-----|:--------------------|:--------------|:--------|:--------|:-----------------------|:-----------|:--------|
@@ -47,36 +53,60 @@ Look at the data table below to get a feeling about the problem:
 | Francesco | 0             | 1       | 0          | 0    | 0                   | 0             | 0       | 0       | 2, 3 ,4, 5, 6, 7, 8, 9 | 0          | 0       |
 | Tommy     | 0             | 8, 9    | 0          | 3    | 0                   | 1, 2, 4, 5, 6 | 0       | 7       | 0                      | 0          | 0       |
 
+We also know the number of lights that came on in night x, and thus the
+number of perfect matches in night x. Furthermore, we know the results
+from the truth booths:
+
+    ## # A tibble: 9 × 4
+    ##   night lights no_match                  perfect_match  
+    ##   <dbl>  <dbl> <chr>                     <chr>          
+    ## 1     1      3 Finnja+Danilo             -              
+    ## 2     2      3 Walentina+Tommy           Jules+Francesco
+    ## 3     3      4 -                         -              
+    ## 4     4      3 -                         -              
+    ## 5     5      3 Finnja+Salvo              -              
+    ## 6     6      2 Finnja+Eugen              -              
+    ## 7     7      1 Steffi+Eugen              -              
+    ## 8     8      4 Melina+Tommy, Sarah+Josua -              
+    ## 9     9      7 -                         Aurelia+Josua
+
 In the beginning, we have 10! = 3,628,800 possible combinations. Later
-in the season, there usually joins an 11th female candidate, so that one
-male candidate gets a second match. There are therefore 36,288,000
-combinations. By combining the clues episode by episode, the algorithm
-is able to eliminate all the impossible combinations until only one
-combination remains:
+in the season, there usually joins an 11th female candidate (here it is
+Vanessa), so that one male candidate gets a second match. There are
+therefore 36,288,000 combinations. By combining the clues episode by
+episode, the algorithm is able to eliminate all the impossible
+combinations until only one combination remains:
 
-``` r
-get_n_combs_development(summarized_table, perfect_matches, no_matches, 0:9)
-```
+    ## # A tibble: 10 × 2
+    ##    night  n_combs
+    ##    <dbl>    <dbl>
+    ##  1     0 36288000
+    ##  2     1  2224800
+    ##  3     2    70200
+    ##  4     3    10867
+    ##  5     4     2000
+    ##  6     5      783
+    ##  7     6       88
+    ##  8     7       60
+    ##  9     8       10
+    ## 10     9        1
 
-    ## # A tibble: 10 × 4
-    ##    night  n_combs no_match                  perfect_match  
-    ##    <dbl>    <dbl> <chr>                     <chr>          
-    ##  1     0 36288000 -                         -              
-    ##  2     1  2224800 Finnja+Danilo             -              
-    ##  3     2    70200 Walentina+Tommy           Jules+Francesco
-    ##  4     3    10867 -                         -              
-    ##  5     4     2000 -                         -              
-    ##  6     5      783 Finnja+Salvo              -              
-    ##  7     6       88 Finnja+Eugen              -              
-    ##  8     7       60 Steffi+Eugen              -              
-    ##  9     8       10 Melina+Tommy, Sarah+Josua -              
-    ## 10     9        1 -                         Aurelia+Josua
+    ## # A tibble: 11 × 2
+    ##    girl      boy      
+    ##    <chr>     <chr>    
+    ##  1 Aurelia   Josua    
+    ##  2 Finnja    Diogo    
+    ##  3 Jacky     Salvo    
+    ##  4 Jill      Tommy    
+    ##  5 Jules     Francesco
+    ##  6 Kathleen  Manu     
+    ##  7 Melina    Danilo   
+    ##  8 Sarah     Alex     
+    ##  9 Steffi    Jamy     
+    ## 10 Vanessa   Alex     
+    ## 11 Walentina Eugen
 
-``` r
-combs_dfs_list[[8]]
-```
+We can also plot the development of proportion of combinations for
+specific couples:
 
-    ##   Aurelia Finnja Jacky  Jill     Jules Kathleen Melina Sarah Steffi Vanessa
-    ## 1   Josua  Diogo Salvo Tommy Francesco     Manu Danilo  Alex   Jamy    Alex
-    ##   Walentina
-    ## 1     Eugen
+![](graphics/aurelia.png)<!-- -->
