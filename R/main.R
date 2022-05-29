@@ -84,7 +84,8 @@ summarized_table <- get_summarised_table_for_every_night(combs_dfs_list, nights 
 ### ------------------------------------------------------------------------------ ###
 ### --------------------------plot_match_probabilities.R-------------------------- ###
 
-plot_match_probabilities(summarized_table, "Aurelia") 
+sapply(girls, plot_match_proportions_grid, "girl", summarized_table)
+sapply(girls, plot_match_proportions_area, "girl", summarized_table)
 
 ### ------------------------------------------------------------------------------ ###
 ### ------------------------------------------------------------------------------ ###

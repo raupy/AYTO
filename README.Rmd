@@ -58,7 +58,10 @@ combs_dfs_list[[8]] %>%
 We can also plot the development of proportion of combinations for specific couples: 
 
 ```{r, echo = FALSE}
-knitr::include_graphics("graphics/aurelia.png")
+knitr::include_graphics("graphics/aurelia_grid.png")
 ```
 
-
+Or do you prefer an area graph?
+```{r, echo = FALSE}
+knitr::include_graphics("graphics/aurelia_area.png")
+```

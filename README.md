@@ -109,4 +109,6 @@ combinations until only one combination remains:
 We can also plot the development of proportion of combinations for
 specific couples:
 
-![](graphics/aurelia.png)<!-- -->
+![](graphics/aurelia_grid.png)<!-- -->
+
+Or do you prefer an area graph? ![](graphics/aurelia_area.png)<!-- -->
