@@ -88,13 +88,16 @@ ayto_tbl <- ayto_tbl %>%
   )
 #### read rds files ----
 
-github <- "https://github.com/raupy/AYTO/tree/dev/ayto/data/"
+#github <- "https://github.com/raupy/AYTO/tree/dev/ayto/data/"
 
 
-combs <- read_csv("data/combs.csv")
+#combs <- read_csv("https://raw.githubusercontent.com/raupy/AYTO/dev/ayto/data/combs.csv") 
+  #read_csv("data/combs.csv")
   #nflreadr::rds_from_url(paste0(github, "combs.rds")) #readRDS("data/combs.rds")
-full_combs <- read_csv("data/full_combs.csv")
+full_combs <- #read_csv("https://raw.githubusercontent.com/raupy/AYTO/dev/ayto/data/full_combs.csv") 
+  read_csv("data/full_combs.csv")
   #readRDS(gzcon(url(paste0(github, "combs_dfs_list.rds")))) #readRDS("data/combs_dfs_list.rds")
-summarized_table <- read_csv("data/sumtable.csv")
+summarized_table <- #read_csv("https://raw.githubusercontent.com/raupy/AYTO/dev/ayto/data/sumtable.csv")
+  read_csv("data/sumtable.csv")
   #readRDS(gzcon(url(paste0(github, "sumtable.rds")))) 
   #readRDS("data/sumtable.rds")

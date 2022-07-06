@@ -22,7 +22,7 @@ ui = fluidPage(
              Außerdem kannst du auch die Matching Night begrenzen."),
           selectInput("berechne_bis_nacht",
                       "Wähle aus, bis zu welcher Matching Night berechnet werden soll:",
-                      choices = 1:ncol(night_lights),
+                      choices = 2:ncol(night_lights),
                       selected = ncol(night_lights)),
           tableOutput("facts")
           
@@ -32,42 +32,43 @@ ui = fluidPage(
     mainPanel(
       DT::DTOutput("ayto_tbl"),
       p(),
-      conditionalPanel(
-        condition = "input.ayto_tbl_cells_selected.length > 0",
+      #conditionalPanel(
+      #  condition = "input.ayto_tbl_cells_selected.length > 0",
         #condition = "output.couples_selected_print != 'Noch nichts ausgewählt.'",
         h3("Deine Auswahl:"),
         wellPanel(textOutput("couples_selected_print")),
-        tableOutput("problems_with_selection")
-        
-      ),
+        p(),
+        tableOutput("problems_with_selection"),
+
+      #),
       p(),
       fluidRow(
         column(4),
         column(4),
         column(4, actionButton("submitSelected", "Auswahl auswerten"))
-        
+
       ),
-      
-      conditionalPanel(
-        condition = "output.calculate_selection_sinnvoll != 'no'",
-        h2("Mögliche Lösungen", align = "center"),
-        DT::DTOutput("possible_combs")
-      )
+      p(),
+
+      # conditionalPanel(
+      #   condition = "output.calculate_selection_sinnvoll != 'no'",
+      #   h2("Mögliche Lösungen", align = "center"),
+         DT::DTOutput("possible_combs")
+      # )
       
     )
     
   ),
-  h2("Verlauf der Perfect-Match-Wahrscheinlichkeiten", align = "center"),
-  fluidRow(
-    column(2, 
-           selectInput("selectGirl", "Kandidatin auswählen", choices = names(ayto_tbl)),
-           selectInput("selectGraphType", "Graphen auswählen", choices = c("Faceted Line Graph", "Area Graph"))),
-    column(10, plotly::plotlyOutput("girlGridPlot")),
-    p()
-    #column(5, plotOutput("girlGridArea"))
-    
-  )
-  
+   h2("Verlauf der Perfect-Match-Wahrscheinlichkeiten", align = "center"),
+   fluidRow(
+     column(2, 
+            selectInput("selectGirl", "Kandidatin auswählen", choices = names(ayto_tbl)),
+            selectInput("selectGraphType", "Graphen auswählen", choices = c("Faceted Line Graph", "Area Graph"))),
+     column(10, plotly::plotlyOutput("girlGridPlot")),
+     p()
+     
+   )
+   
   
   
   )
@@ -151,7 +152,7 @@ server = function(input, output) {
                                 
   
   output$celltext <- renderPrint(
-    if(nrow(input$ayto_tbl_cells_selected) > 0 ){
+    if(!is.null(input$ayto_tbl_cells_selected)){
       input$ayto_tbl_cells_selected
     } else {
       ""
@@ -159,7 +160,7 @@ server = function(input, output) {
   )
   
   boys_selected <- reactive({
-    if(nrow(input$ayto_tbl_cells_selected) > 0 ){
+    if(!is.null(input$ayto_tbl_cells_selected) & nrow(input$ayto_tbl_cells_selected) > 0){
       rownames(ayto_tbl)[input$ayto_tbl_cells_selected[,1]]
     } else {
       ""
@@ -167,7 +168,7 @@ server = function(input, output) {
   })
   
   girls_selected <- reactive({
-    if(nrow(input$ayto_tbl_cells_selected) > 0 ){
+    if(!is.null(input$ayto_tbl_cells_selected) & nrow(input$ayto_tbl_cells_selected) > 0){
       names(ayto_tbl)[input$ayto_tbl_cells_selected[,2]]
     } else {
       ""
@@ -175,7 +176,7 @@ server = function(input, output) {
   })
   
   couples_selected <- reactive({
-    if(nrow(input$ayto_tbl_cells_selected) > 0 ){
+    if(!is.null(input$ayto_tbl_cells_selected) & nrow(input$ayto_tbl_cells_selected) > 0){
       # boys_selected <- rownames(ayto_tbl)[input$ayto_tbl_cells_selected[,1]]
       # girls_selected <- names(ayto_tbl)[input$ayto_tbl_cells_selected[,2]]
       paste(girls_selected(), boys_selected(), sep = "+") %>%
@@ -296,10 +297,12 @@ server = function(input, output) {
   
   output$girlGridPlot <- plotly::renderPlotly({
     girl <- input$selectGirl
+    sum_table_filtered <- summarized_table %>%
+      filter(night <= as.numeric(input$berechne_bis_nacht))
     if(input$selectGraphType == "Area Graph"){
-      plot_match_proportions_area(girl, "girl", summarized_table)
+      plot_match_proportions_area(girl, "girl", sum_table_filtered)
     } else {
-      plot_match_proportions_grid(girl, "girl", summarized_table)
+      plot_match_proportions_grid(girl, "girl", sum_table_filtered)
     }
   })
   
