@@ -1,6 +1,36 @@
+
+
+library(shiny)
+library(bslib)
+library(showtext)
+library(thematic)
+library(DT)
+library(rebus)
 library(readxl)
 library(tidyverse)
 library(assertive)
+
+
+my_theme2 <- bs_theme(
+  #bg = "#002B36", fg = "#EEE8D5", 
+  primary = "#6f42c1",
+  secondary = "#ea39b8",
+  bg = "#1a0933",
+  fg = "#ffffff",
+  version = 5,
+  #bootswatch = "vapor",
+  base_font = font_google("Comfortaa")
+)
+
+thematic_shiny(font = "auto")
+
+
+
+
+
+
+
+
 ### functions for reading AYTO excel sheet and extracting data 
 
 
@@ -58,6 +88,13 @@ ayto_tbl <- ayto_tbl %>%
   )
 #### read rds files ----
 
-combs <- readRDS("data/combs.rds")
-combs_dfs_list <- readRDS("data/combs_dfs_list.rds")
-summarized_table <- readRDS("data/sumtable.rds")
+github <- "https://github.com/raupy/AYTO/tree/dev/ayto/data/"
+
+
+combs <- read_csv("data/combs.csv")
+  #nflreadr::rds_from_url(paste0(github, "combs.rds")) #readRDS("data/combs.rds")
+full_combs <- read_csv("data/full_combs.csv")
+  #readRDS(gzcon(url(paste0(github, "combs_dfs_list.rds")))) #readRDS("data/combs_dfs_list.rds")
+summarized_table <- read_csv("data/sumtable.csv")
+  #readRDS(gzcon(url(paste0(github, "sumtable.rds")))) 
+  #readRDS("data/sumtable.rds")

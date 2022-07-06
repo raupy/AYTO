@@ -76,14 +76,18 @@ is_possible <- function(matching_night, comb, nights) {
 
 
 match_to_matrix <- function(matches){
-  matches <- unlist(str_split(matches, ", "))
-  solo_names <- unlist(str_split(matches, fixed("+")))
-  girls_i <- seq(1, length(solo_names), 2)
-  girls <- solo_names[girls_i]
-  boys <- solo_names[-girls_i]
-  girls_i <- map_int(girls, ~ which(names(ayto_tbl) == .x))
-  boys_i <- map_int(boys, ~ which(rownames(ayto_tbl) == .x))
-  cbind(boys_i, girls_i)
+  if(length(matches) > 0){
+    matches <- unlist(str_split(matches, ", "))
+    solo_names <- unlist(str_split(matches, fixed("+")))
+    girls_i <- seq(1, length(solo_names), 2)
+    girls <- solo_names[girls_i]
+    boys <- solo_names[-girls_i]
+    girls_i <- map_int(girls, ~ which(names(ayto_tbl) == .x))
+    boys_i <- map_int(boys, ~ which(rownames(ayto_tbl) == .x))
+    cbind(boys_i, girls_i)
+  } else{
+    NULL
+  }
 }
 
 selectable_cells <- function(no_matches){
@@ -92,6 +96,11 @@ selectable_cells <- function(no_matches){
   # colnames(all_cells) = c("row", "col")
   # res <- all_cells %>%
   #   as_tibble() 
+  
+  if(is.null(no_matches)){
+    return(all_cells)
+  }
+  
   for(i in 1:nrow(no_matches)){
     drop_row <- which(all_cells[,1] == no_matches[i, 1]
           & all_cells[,2] == no_matches[i, 2])

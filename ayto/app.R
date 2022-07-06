@@ -1,31 +1,5 @@
 
 
-library(shiny)
-library(bslib)
-library(showtext)
-library(thematic)
-library(DT)
-library(rebus)
-
-my_theme2 <- bs_theme(
-  #bg = "#002B36", fg = "#EEE8D5", 
-  primary = "#6f42c1",
-  secondary = "#ea39b8",
-  bg = "#1a0933",
-  fg = "#ffffff",
-  version = 5,
-  #bootswatch = "vapor",
-  base_font = font_google("Comfortaa")
-)
-
-thematic_shiny(font = "auto")
-
-
-
-
-
-
-
 
 #### UI ----
 
@@ -38,10 +12,10 @@ ui = fluidPage(
       div(
       h6("In der Tabelle rechts siehst du, wie die Kandidat:innen in den jeweiligen Matching Nights zusammen saßen.
       Klicke die Zellen der Paare an, von denen du glaubst, dass sie ein Perfect Match bilden.
-      Finde so heraus, ob du richtig liegst, oder wo ggf. Kollisionen existieren.
-      Paare, von denen bereits bekannt ist, dass sie ein Perfect Match bilden, sind bereits vorselektiert.
-      Paare, von denen hingegen bereits bekannt ist, dass sie ein No Match sind, können nicht selektiert werden.
-      In der Tabelle unten findest du weitere Informationen, die du brauchst, um das AYTO Rätsel zu lösen."),
+      Finde so heraus, ob du richtig liegst, oder wo ggf. Kollisionen existieren."),
+      h6("Paare, von denen schon bekannt ist, dass sie ein Perfect Match bilden, sind bereits vorselektiert.
+         Paare, von denen hingegen schon bekannt ist, dass sie ein No Match sind, können nicht selektiert werden.
+         In der Tabelle unten findest du weitere Informationen, die du brauchst, um das AYTO Rätsel zu lösen."),
           h6("Hinweis: Du musst nicht alle zehn/elf Paare auswählen,
              sondern kannst auch nur einen Teil deiner Lösung ausprobieren
              und berechnen lassen, wie viele verschiedene Möglichkeiten es dafür gibt.
@@ -88,7 +62,8 @@ ui = fluidPage(
     column(2, 
            selectInput("selectGirl", "Kandidatin auswählen", choices = names(ayto_tbl)),
            selectInput("selectGraphType", "Graphen auswählen", choices = c("Faceted Line Graph", "Area Graph"))),
-    column(10, plotly::plotlyOutput("girlGridPlot"))#,
+    column(10, plotly::plotlyOutput("girlGridPlot")),
+    p()
     #column(5, plotOutput("girlGridArea"))
     
   )
@@ -266,7 +241,8 @@ server = function(input, output) {
     #if((length(girls) > 1 & length(boys) > 1) |
     #   (girls != "" & boys != "") 
     if(girls[1] != "") {
-      df <- combs_dfs_list[[as.numeric(input$berechne_bis_nacht) - 1]]
+      df <- full_combs %>% filter(night == as.numeric(input$berechne_bis_nacht))
+      #[[as.numeric(input$berechne_bis_nacht) - 1]]
       for (i in 1:length(girls)) {
         df <- df %>% filter(.data[[girls[[i]]]] == boys[[i]])
       }
